@@ -24,7 +24,7 @@ def main():
     current_line = '[bright_black italic]' + text[sentence_nr] + '[/bright_black italic]'
 
     print_ui(mistakes, wpm, accuracy, time, current_line, used_os)
-    while sentence_nr <= len(text) - 1:
+    while sentence_nr <= len(text):
         typed, sentence_nr, idx = input(text, sentence_nr, idx, typed)
         mistakes, typed, mistake_pos = spellcheck(typed, sentence_nr, text, mistakes)
         current_line = merge(text, sentence_nr, idx, typed, mistake_pos)
@@ -83,6 +83,9 @@ def merge(text, sentence_nr, idx, typed, mistake_pos):
         x = current_line[pos]
         if i == 0:
             pos += 1
+        elif i == 2:
+            current_line = current_line[:pos] + f'[bright_red]_[/bright_red]' + current_line[pos + 1 :]
+            pos += 26
         else:
             current_line = current_line[:pos] + f'[bright_red]{x}[/bright_red]' + current_line[pos + 1 :]
             pos += 26
@@ -99,9 +102,15 @@ def spellcheck(typed, sentence_nr, text, mistakes):
             mistake_pos.append(0)
             idx += 1
         else:
-            mistakes += 1
-            mistake_pos.append(1)
-            idx += 1
+            if i == ' ':
+                mistakes += 1
+                mistake_pos.append(2)
+                idx += 1
+            else:
+                mistakes += 1
+                mistake_pos.append(1)
+                idx += 1
+
     return mistakes, typed, mistake_pos
 
 
