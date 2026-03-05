@@ -12,7 +12,7 @@ def main():
     mistakes = 0
     wpm = 0
     accuracy = 0
-    time = 0
+    elapsed_time = 0
     current_line = 0
     idx = 0
     sentence_nr = 0
@@ -21,14 +21,36 @@ def main():
         'Lorem Ipsum dolor sit Amet, consectetur Adipiscing elit.↵',
         'Ut enim ad minim Veniam, quis nostrud Exercitation ullamco Laboris.↵',
     ]
-    current_line = '[bright_black italic]' + text[sentence_nr] + '[/bright_black italic]'
 
-    print_ui(mistakes, wpm, accuracy, time, current_line, used_os)
+    clear_terminal(used_os)
+    print('press enter to start')
+    k = readchar.readkey()
+    repeated = 0
+    if k == key.ENTER:
+        clear_terminal(used_os)
+    else:
+        while k != key.ENTER:
+            clear_terminal(used_os)
+            print('thats not enter\ntry again...')
+            k = readchar.readkey()
+            repeated += 1
+            if repeated == 5:
+                print('Never touch a computer again.')
+                time.sleep(1)
+                clear_terminal(used_os)
+                sys.exit()
+
+    current_line = '[bright_black italic]' + text[sentence_nr] + '[/bright_black italic]'
+    start_time = time.perf_counter()
+
+    print_ui(mistakes, wpm, accuracy, elapsed_time, current_line, used_os)
     while sentence_nr <= len(text):
         typed, sentence_nr, idx = input(text, sentence_nr, idx, typed)
         mistakes, typed, mistake_pos = spellcheck(typed, sentence_nr, text, mistakes)
         current_line = merge(text, sentence_nr, idx, typed, mistake_pos)
-        print_ui(mistakes, wpm, accuracy, time, current_line, used_os)
+        elapsed_time = update_time(start_time)
+        wpm, accuracy = wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time)
+        print_ui(mistakes, wpm, accuracy, elapsed_time, current_line, used_os)
 
 
 def clear_terminal(used_os):
@@ -38,11 +60,11 @@ def clear_terminal(used_os):
         os.system('clear')
 
 
-def print_ui(mistakes, wpm, accuracy, time, current_line, used_os):
+def print_ui(mistakes, wpm, accuracy, elapsed_time, current_line, used_os):
     clear_terminal(used_os)
     print(
         f"""
-        Mistakes: {mistakes} | WPM: {wpm} | Accuracy: {accuracy} | Time: {time}
+        Mistakes: {mistakes} | WPM: {wpm:.0f} | Accuracy: {accuracy:.1f}% | Time: {elapsed_time:.1f}
         {current_line}
             """
     )
@@ -112,6 +134,26 @@ def spellcheck(typed, sentence_nr, text, mistakes):
                 idx += 1
 
     return mistakes, typed, mistake_pos
+
+
+def update_time(start_time):
+    end_time = time.perf_counter()
+    elapsed_time = end_time - start_time
+    return elapsed_time
+
+
+def health():
+    FULL = '\uf004'
+    EMPTY = '\uf08a'
+
+
+def wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time):
+    time_min = elapsed_time / 60
+    keypresses = len(typed) / 5
+    wpm = keypresses / time_min
+    accuracy = ((len(typed) - mistakes) / len(typed)) * 100
+
+    return wpm, accuracy
 
 
 if __name__ == '__main__':
