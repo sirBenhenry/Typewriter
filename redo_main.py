@@ -1,3 +1,5 @@
+"""sdkhsdfh"""
+
 import platform
 import os
 from rich import print
@@ -14,6 +16,7 @@ def main():
     accuracy = 0
     elapsed_time = 0
     current_line = 0
+    mistakes_stored = 0
     idx = 0
     sentence_nr = 0
     typed = ''
@@ -45,8 +48,8 @@ def main():
 
     print_ui(mistakes, wpm, accuracy, elapsed_time, current_line, used_os)
     while sentence_nr <= len(text):
-        typed, sentence_nr, idx = input(text, sentence_nr, idx, typed)
-        mistakes, typed, mistake_pos = spellcheck(typed, sentence_nr, text, mistakes)
+        typed, sentence_nr, idx, mistakes_stored = input(text, sentence_nr, idx, typed, mistakes_stored, mistakes)
+        mistakes, typed, mistake_pos = spellcheck(typed, sentence_nr, text, mistakes, mistakes_stored)
         current_line = merge(text, sentence_nr, idx, typed, mistake_pos)
         elapsed_time = update_time(start_time)
         wpm, accuracy = wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time)
@@ -70,7 +73,7 @@ def print_ui(mistakes, wpm, accuracy, elapsed_time, current_line, used_os):
     )
 
 
-def input(text, sentence_nr, idx, typed):
+def input(text, sentence_nr, idx, typed, mistakes_stored, mistakes):
     k = readchar.readkey()
     sentence = text[sentence_nr]
     current_letter = sentence[idx]
@@ -79,20 +82,24 @@ def input(text, sentence_nr, idx, typed):
             typed = typed[:-1]
             idx -= 1
         else:
-            return typed, sentence_nr, idx
+            return typed, sentence_nr, idx, mistakes_stored
     elif k == key.ENTER:
         if current_letter == '↵':
             idx = 0
             sentence_nr += 1
+            mistakes_stored += mistakes
             typed = ''
         else:
-            return typed, sentence_nr, idx
+            return typed, sentence_nr, idx, mistakes_stored
 
     else:
-        typed += k
-        idx += 1
+        if current_letter == '↵':
+            return typed, sentence_nr, idx, mistakes_stored
+        else:
+            typed += k
+            idx += 1
 
-    return typed, sentence_nr, idx
+    return typed, sentence_nr, idx, mistakes_stored
 
 
 def merge(text, sentence_nr, idx, typed, mistake_pos):
@@ -106,7 +113,7 @@ def merge(text, sentence_nr, idx, typed, mistake_pos):
         if i == 0:
             pos += 1
         elif i == 2:
-            current_line = current_line[:pos] + f'[bright_red]_[/bright_red]' + current_line[pos + 1 :]
+            current_line = current_line[:pos] + '[bright_red]_[/bright_red]' + current_line[pos + 1 :]
             pos += 26
         else:
             current_line = current_line[:pos] + f'[bright_red]{x}[/bright_red]' + current_line[pos + 1 :]
@@ -115,7 +122,7 @@ def merge(text, sentence_nr, idx, typed, mistake_pos):
     return current_line
 
 
-def spellcheck(typed, sentence_nr, text, mistakes):
+def spellcheck(typed, sentence_nr, text, mistakes, mistakes_stored):
     idx = 0
     mistakes = 0
     mistake_pos = []
@@ -133,6 +140,8 @@ def spellcheck(typed, sentence_nr, text, mistakes):
                 mistake_pos.append(1)
                 idx += 1
 
+    mistakes += mistakes_stored
+
     return mistakes, typed, mistake_pos
 
 
@@ -143,15 +152,17 @@ def update_time(start_time):
 
 
 def health():
-    FULL = '\uf004'
-    EMPTY = '\uf08a'
+    pass
 
 
 def wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time):
     time_min = elapsed_time / 60
     keypresses = len(typed) / 5
     wpm = keypresses / time_min
-    accuracy = ((len(typed) - mistakes) / len(typed)) * 100
+    if len(typed) == 0:
+        return wpm, accuracy
+    else:
+        accuracy = ((len(typed) - mistakes) / len(typed)) * 100
 
     return wpm, accuracy
 
