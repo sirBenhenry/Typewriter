@@ -1,5 +1,3 @@
-"""sdkhsdfh"""
-
 import platform
 import os
 from rich import print
@@ -7,6 +5,8 @@ import readchar
 from readchar import key
 import sys
 import time
+from llm.generate import load_model
+from llm.generate import generate_sentence as generate
 
 
 def main():
@@ -19,13 +19,14 @@ def main():
     mistakes_stored = 0
     idx = 0
     sentence_nr = 0
+    previous_typed = 0
     typed = ''
-    text = [
-        'Lorem Ipsum dolor sit Amet, consectetur Adipiscing elit.↵',
-        'Ut enim ad minim Veniam, quis nostrud Exercitation ullamco Laboris.↵',
-    ]
-
+    text = []
     clear_terminal(used_os)
+    load_model()
+    clear_terminal(used_os)
+    text = generate_sentence(text)
+    text = generate_sentence(text)
     print('press enter to start')
     k = readchar.readkey()
     repeated = 0
@@ -48,11 +49,15 @@ def main():
 
     print_ui(mistakes, wpm, accuracy, elapsed_time, current_line, used_os)
     while sentence_nr <= len(text):
-        typed, sentence_nr, idx, mistakes_stored = input(text, sentence_nr, idx, typed, mistakes_stored, mistakes)
+        typed, sentence_nr, idx, mistakes_stored, previous_typed, text = input(
+            text, sentence_nr, idx, typed, mistakes_stored, mistakes, previous_typed
+        )
         mistakes, typed, mistake_pos = spellcheck(typed, sentence_nr, text, mistakes, mistakes_stored)
         current_line = merge(text, sentence_nr, idx, typed, mistake_pos)
         elapsed_time = update_time(start_time)
-        wpm, accuracy = wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time)
+        wpm, accuracy = wpm_accuracy_calculation(
+            typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time, previous_typed
+        )
         print_ui(mistakes, wpm, accuracy, elapsed_time, current_line, used_os)
 
 
@@ -73,7 +78,7 @@ def print_ui(mistakes, wpm, accuracy, elapsed_time, current_line, used_os):
     )
 
 
-def input(text, sentence_nr, idx, typed, mistakes_stored, mistakes):
+def input(text, sentence_nr, idx, typed, mistakes_stored, mistakes, previous_typed):
     k = readchar.readkey()
     sentence = text[sentence_nr]
     current_letter = sentence[idx]
@@ -82,24 +87,26 @@ def input(text, sentence_nr, idx, typed, mistakes_stored, mistakes):
             typed = typed[:-1]
             idx -= 1
         else:
-            return typed, sentence_nr, idx, mistakes_stored
+            return typed, sentence_nr, idx, mistakes_stored, previous_typed, text
     elif k == key.ENTER:
         if current_letter == '↵':
             idx = 0
             sentence_nr += 1
             mistakes_stored += mistakes
             typed = ''
+            previous_typed += len(typed)
+            generate_sentence(text)
         else:
-            return typed, sentence_nr, idx, mistakes_stored
+            return typed, sentence_nr, idx, mistakes_stored, previous_typed, text
 
     else:
         if current_letter == '↵':
-            return typed, sentence_nr, idx, mistakes_stored
+            return typed, sentence_nr, idx, mistakes_stored, previous_typed
         else:
             typed += k
             idx += 1
 
-    return typed, sentence_nr, idx, mistakes_stored
+    return typed, sentence_nr, idx, mistakes_stored, previous_typed, text
 
 
 def merge(text, sentence_nr, idx, typed, mistake_pos):
@@ -155,9 +162,10 @@ def health():
     pass
 
 
-def wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time):
+def wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time, previous_typed):
     time_min = elapsed_time / 60
-    keypresses = len(typed) / 5
+    keypresses = len(typed) + previous_typed
+    keypresses = keypresses / 5
     wpm = keypresses / time_min
     if len(typed) == 0:
         return wpm, accuracy
@@ -165,6 +173,14 @@ def wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, 
         accuracy = ((len(typed) - mistakes) / len(typed)) * 100
 
     return wpm, accuracy
+
+
+def generate_sentence(text):
+    sentence = generate('english')
+    sentence = sentence + '↵'
+    text.append(sentence)
+
+    return text
 
 
 if __name__ == '__main__':
