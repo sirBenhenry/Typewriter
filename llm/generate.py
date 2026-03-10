@@ -12,6 +12,7 @@ Usage:
 Supported language values: "english", "en", "german", "de", "deutsch"
 """
 import os
+import random
 from pathlib import Path
 
 MODEL_PATH = Path(__file__).parent / "models" / "qwen2.5-0.5b-instruct-q4_k_m.gguf"
@@ -36,6 +37,7 @@ def load_model():
         n_ctx=256,
         n_threads=os.cpu_count() or 4,
         verbose=False,
+        seed=random.randint(0, 2**31),
     )
 
 

@@ -92,16 +92,16 @@ def input(text, sentence_nr, idx, typed, mistakes_stored, mistakes, previous_typ
         if current_letter == '↵':
             idx = 0
             sentence_nr += 1
-            mistakes_stored += mistakes
-            typed = ''
             previous_typed += len(typed)
+            mistakes_stored = mistakes
+            typed = ''
             generate_sentence(text)
         else:
             return typed, sentence_nr, idx, mistakes_stored, previous_typed, text
 
     else:
         if current_letter == '↵':
-            return typed, sentence_nr, idx, mistakes_stored, previous_typed
+            return typed, sentence_nr, idx, mistakes_stored, previous_typed, text
         else:
             typed += k
             idx += 1
@@ -164,13 +164,12 @@ def health():
 
 def wpm_accuracy_calculation(typed, sentence_nr, text, mistakes, wpm, accuracy, elapsed_time, previous_typed):
     time_min = elapsed_time / 60
-    keypresses = len(typed) + previous_typed
-    keypresses = keypresses / 5
+    keypresses = (len(typed) + previous_typed) / 5
     wpm = keypresses / time_min
     if len(typed) == 0:
         return wpm, accuracy
     else:
-        accuracy = ((len(typed) - mistakes) / len(typed)) * 100
+        accuracy = (((len(typed) + previous_typed) - mistakes) / (len(typed) + previous_typed)) * 100
 
     return wpm, accuracy
 
